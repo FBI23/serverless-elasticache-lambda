@@ -30,7 +30,6 @@ async function dataHandler() {
   console.log(`Time: ${time}`);
 
   return { time };
-
 }
 
 async function cacheHandler() {

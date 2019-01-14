@@ -8,7 +8,6 @@ tmp/
 
 # Serverless templates
 .serverless/
-serverless.yml
 
 # Log
 *.log
