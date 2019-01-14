@@ -1,0 +1,17 @@
+{
+  "name": "serverless-redis-lambda",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "invoke": "serverless invoke -f cacheTime"
+  },
+  "devDependencies": {
+    "serverless": "^1.36.0"
+  },
+  "dependencies": {
+    "ioredis": "^4.3.0",
+    "node-fetch": "^2.3.0"
+  }
+}

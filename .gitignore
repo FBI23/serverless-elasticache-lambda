@@ -1,0 +1,35 @@
+.# Mac / misc
+.DS_Store
+.env
+
+# Built files
+lib/
+tmp/
+
+# Serverless templates
+.serverless/
+serverless.yml
+
+# Log
+*.log
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Node
+node_modules/
+package-lock.json
+yarn-error.log
+
+# Temporary files
+*~
+\#*#
+.#*
+*.orig
+*.rej
+*.swp
+*.tmp
+*.tmp.*
