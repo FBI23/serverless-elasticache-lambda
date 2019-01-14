@@ -4,14 +4,16 @@ frameworkVersion: '>=1.21.0 <2.0.0'
 
 provider:
   name: aws
-  stage: production
+  stage: staging
   region: eu-west-1
   runtime: nodejs8.10
   environment:
     NODE_ENV: '${self:provider.stage}'
     USE_CACHE: true
-    REDIS_HOST: "Fn::GetAtt": [ServerlessElasticacheReplicationGroup, ConfigurationEndPoint.Address]
-    REDIS_PORT: "Fn::GetAtt": [ServerlessElasticacheReplicationGroup, ConfigurationEndPoint.Port]
+    REDIS_HOST: 
+      "Fn::GetAtt": [ServerlessElasticacheReplicationGroup, ConfigurationEndPoint.Address]
+    REDIS_PORT:
+      "Fn::GetAtt": [ServerlessElasticacheReplicationGroup, ConfigurationEndPoint.Port]
 
 functions:
   cacheTime:
@@ -37,11 +39,6 @@ resources:
       Properties:
         CidrBlock: "10.0.0.0/16"
 
-    ElasticIpLambda:
-      Type: AWS::EC2::EIP
-      Properties:
-        Domain: vpc
-
     InternetGatewayLambda:
       Type: AWS::EC2::InternetGateway
 
@@ -53,15 +50,50 @@ resources:
         InternetGatewayId:
           Ref: InternetGatewayLambda
 
-    NatGatewayLambda:
+    ElasticIPA:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+
+    NatGatewayA:
       Type: AWS::EC2::NatGateway
       Properties:
         AllocationId:
           Fn::GetAtt:
-            - ElasticIpLambda
+            - ElasticIPA
             - AllocationId
         SubnetId:
           Ref: ServerlessPublicSubnetA
+
+    ElasticIPB:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+
+    NatGatewayB:
+      Type: AWS::EC2::NatGateway
+      Properties:
+        AllocationId:
+          Fn::GetAtt:
+            - ElasticIPB
+            - AllocationId
+        SubnetId:
+          Ref: ServerlessPublicSubnetB
+
+    ElasticIPC:
+      Type: AWS::EC2::EIP
+      Properties:
+        Domain: vpc
+
+    NatGatewayC:
+      Type: AWS::EC2::NatGateway
+      Properties:
+        AllocationId:
+          Fn::GetAtt:
+            - ElasticIPC
+            - AllocationId
+        SubnetId:
+          Ref: ServerlessPublicSubnetC
 
     ServerlessPrivateSubnetA:
       DependsOn: ServerlessVPC
@@ -70,7 +102,7 @@ resources:
         VpcId:
           Ref: ServerlessVPC
         AvailabilityZone: ${self:provider.region}a
-        CidrBlock: "10.0.1.0/24"
+        CidrBlock: "10.0.0.0/21"
 
     ServerlessPublicSubnetA:
       DependsOn: ServerlessVPC
@@ -79,53 +111,181 @@ resources:
         VpcId:
           Ref: ServerlessVPC
         AvailabilityZone: ${self:provider.region}a
-        CidrBlock: "10.0.2.0/24"
+        CidrBlock: "10.0.8.0/22"
 
-    DefaultPrivateRouteTable:
+    DefaultPrivateRouteTableA:
       Type: AWS::EC2::RouteTable
       Properties:
         VpcId:
           Ref: ServerlessVPC
 
-    DefaultPrivateRoute:
+    DefaultPrivateRouteA:
       Type: AWS::EC2::Route
       Properties:
         RouteTableId:
-          Ref: DefaultPrivateRouteTable
+          Ref: DefaultPrivateRouteTableA
         DestinationCidrBlock: 0.0.0.0/0
         NatGatewayId:
-          Ref: NatGatewayLambda
+          Ref: NatGatewayA
 
-    DefaultPublicRouteTable:
+    DefaultPublicRouteTableA:
       Type: AWS::EC2::RouteTable
       Properties:
         VpcId:
           Ref: ServerlessVPC
 
-    DefaultPublicRoute:
+    DefaultPublicRouteA:
       Type: AWS::EC2::Route
       Properties:
         RouteTableId:
-          Ref: DefaultPublicRouteTable
+          Ref: DefaultPublicRouteTableA
         DestinationCidrBlock: 0.0.0.0/0
         GatewayId:
           Ref: InternetGatewayLambda
 
-    SubnetRouteTableAssociationLambdaPrivateA:
+    SubnetRouteTableAssociationPrivateA:
       Type: AWS::EC2::SubnetRouteTableAssociation
       Properties:
         SubnetId:
           Ref: ServerlessPrivateSubnetA
         RouteTableId:
-          Ref: DefaultPrivateRouteTable
+          Ref: DefaultPrivateRouteTableA
 
-    SubnetRouteTableAssociationLambdaPublicA:
+    SubnetRouteTableAssociationPublicA:
       Type: AWS::EC2::SubnetRouteTableAssociation
       Properties:
         SubnetId:
           Ref: ServerlessPublicSubnetA
         RouteTableId:
-          Ref: DefaultPublicRouteTable
+          Ref: DefaultPublicRouteTableA
+
+    ServerlessPrivateSubnetB:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}b
+        CidrBlock: "10.0.16.0/21"
+
+    ServerlessPublicSubnetB:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}b
+        CidrBlock: "10.0.24.0/22"
+
+    DefaultPrivateRouteTableB:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+
+    DefaultPrivateRouteB:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: DefaultPrivateRouteTableB
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId:
+          Ref: NatGatewayB
+
+    DefaultPublicRouteTableB:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+
+    DefaultPublicRouteB:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: DefaultPublicRouteTableB
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: InternetGatewayLambda
+
+    SubnetRouteTableAssociationPrivateB:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId:
+          Ref: ServerlessPrivateSubnetB
+        RouteTableId:
+          Ref: DefaultPrivateRouteTableB
+
+    SubnetRouteTableAssociationPublicB:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId:
+          Ref: ServerlessPublicSubnetB
+        RouteTableId:
+          Ref: DefaultPublicRouteTableB
+
+    ServerlessPrivateSubnetC:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}c
+        CidrBlock: "10.0.32.0/21"
+
+    ServerlessPublicSubnetC:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}c
+        CidrBlock: "10.0.40.0/22"
+
+    DefaultPrivateRouteTableC:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+
+    DefaultPrivateRouteC:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: DefaultPrivateRouteTableC
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId:
+          Ref: NatGatewayC
+
+    DefaultPublicRouteTableC:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+
+    DefaultPublicRouteC:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId:
+          Ref: DefaultPublicRouteTableC
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: InternetGatewayLambda
+
+    SubnetRouteTableAssociationPrivateC:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId:
+          Ref: ServerlessPrivateSubnetC
+        RouteTableId:
+          Ref: DefaultPrivateRouteTableC
+
+    SubnetRouteTableAssociationPublicC:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        SubnetId:
+          Ref: ServerlessPublicSubnetC
+        RouteTableId:
+          Ref: DefaultPublicRouteTableC
 
     ServerlessSecurityGroup:
       DependsOn: ServerlessVPC
@@ -155,6 +315,8 @@ resources:
         Description: "Cache Subnet Group"
         SubnetIds:
         - Ref: ServerlessPrivateSubnetA
+        - Ref: ServerlessPrivateSubnetB
+        - Ref: ServerlessPrivateSubnetC
 
     ServerlessElasticacheParameterGroup:
       Type: 'AWS::ElastiCache::ParameterGroup'
@@ -187,8 +349,8 @@ resources:
           - PrimaryAvailabilityZone: '${self:provider.region}a'
             ReplicaAvailabilityZones:
               - '${self:provider.region}a'
-              # - '${self:provider.region}b'
-              # - '${self:provider.region}c'
-            ReplicaCount: 1
+              - '${self:provider.region}b'
+              - '${self:provider.region}c'
+            ReplicaCount: 3
         SecurityGroupIds:
           - Ref: ServerlessStorageSecurityGroup
